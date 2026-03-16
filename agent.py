@@ -13,14 +13,42 @@ llm = ChatGroq(
     model="llama-3.3-70b-versatile"
 
 )
+import requests
+from bs4 import BeautifulSoup
+
+def scrape_web(topic):
+    url = f"https://www.google.com/search?q={topic}"
+    headers = {"User-Agent": "Mozilla/5.0"}
+
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    results = []
+    for g in soup.select("h3"):
+        results.append(g.text)
+
+    return results[:5]
 
 def research(topic):
     try:
-        prompt = f"Explain in detail about {topic}"
+        # Get web data
+        scraped_data = scrape_web(topic)
+
+        # Convert list to text
+        context = " ".join(scraped_data)
+
+        # Prompt with web context
+        prompt = f"""
+        Research the topic: {topic}
+
+        Here are some web search results:
+        {context}
+
+        Based on these, write a clear research explanation.
+        """
 
         response = llm.invoke(prompt)
 
-        # Handle response safely
         if hasattr(response, "content"):
             return response.content
         else:

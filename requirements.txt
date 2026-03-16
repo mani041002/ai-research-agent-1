@@ -2,7 +2,6 @@ fastapi
 uvicorn
 streamlit
 requests
-python-dotenv
-groq
-langchain
 beautifulsoup4
+python-dotenv
+langchain-groq
