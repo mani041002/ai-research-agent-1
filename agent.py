@@ -24,35 +24,40 @@ def scrape_web(topic):
     soup = BeautifulSoup(response.text, "html.parser")
 
     results = []
-    for g in soup.select("h3"):
-        results.append(g.text)
+
+    for g in soup.select(".tF2Cxc"):
+        title = g.select_one("h3")
+        snippet = g.select_one(".VwiC3b")
+
+        if title and snippet:
+            results.append({
+                "title": title.text,
+                "snippet": snippet.text
+            })
 
     return results[:5]
 
 def research(topic):
     try:
-        # Get web data
-        scraped_data = scrape_web(topic)
+        web_data = scrape_web(topic)
 
-        # Convert list to text
-        context = " ".join(scraped_data)
+        formatted_data = "\n".join(
+            [f"{item['title']}: {item['snippet']}" for item in web_data]
+        )
 
-        # Prompt with web context
         prompt = f"""
-        Research the topic: {topic}
+        Use ONLY the below web search results to answer.
 
-        Here are some web search results:
-        {context}
+        {formatted_data}
 
-        Based on these, write a clear research explanation.
+        Question: {topic}
+
+        Give a factual and up-to-date answer.
         """
 
         response = llm.invoke(prompt)
 
-        if hasattr(response, "content"):
-            return response.content
-        else:
-            return str(response)
+        return response.content
 
     except Exception as e:
         return f"Error: {str(e)}"
