@@ -41,9 +41,10 @@ if st.button("🚀 Research"):
 
             try:
                 response = requests.get(
-                    "http://127.0.0.1:8000/research",
+                    "https://ai-research-agent-l3.onrender.com/research",
                     params={"topic": topic}
                 )
+
 
                 if response.status_code == 200:
                     data = response.json()
