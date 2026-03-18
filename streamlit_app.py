@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-# Page configuration
+# Page config
 st.set_page_config(
     page_title="AI Research Agent",
     page_icon="🤖",
@@ -10,41 +10,45 @@ st.set_page_config(
 
 # Title
 st.title("🤖 AI Research Agent")
-st.markdown("Research any topic using AI")
+st.markdown("Research any topic using AI + RAG")
 
 # Sidebar
 st.sidebar.header("About")
-st.sidebar.write(
-    """
-    This AI agent researches any topic using an AI model.
-
-    Built with:
-    - FastAPI
-    - Streamlit
-    - Groq AI
-    """
-)
+st.sidebar.write("""
+This AI agent researches any topic using:
+- FastAPI backend
+- RAG (FAISS + embeddings)
+- Tavily web search
+- Groq LLM
+""")
 
 st.sidebar.info("Enter a topic and click Research")
 
-# Input section
+# Input
 topic = st.text_input("🔍 Enter a topic to research")
 
 # Button
 if st.button("🚀 Research"):
 
-    if topic == "":
+    if topic.strip() == "":
         st.warning("Please enter a topic")
-    else:
 
+    else:
         with st.spinner("Researching... please wait..."):
 
             try:
+                # 🔥 LOCAL BACKEND URL
+                url = "http://127.0.0.1:8000/research"
+
                 response = requests.get(
-                    "https://ai-research-agent-l3.onrender.com/research",
-                    params={"topic": topic}
+                    url,
+                    params={"topic": topic},
+                    timeout=60
                 )
 
+                # 🔍 DEBUG INFO
+
+                st.write("Raw Response:", response.text)
 
                 if response.status_code == 200:
                     data = response.json()
@@ -52,10 +56,16 @@ if st.button("🚀 Research"):
                     st.success("Research Complete")
 
                     st.subheader("📚 AI Research Result")
-                    st.write(data["research"])
+                    st.write(data.get("research", "No data found"))
 
                 else:
-                    st.error("Server returned an error")
+                    st.error("❌ Server returned an error")
+
+            except requests.exceptions.ConnectionError:
+                st.error("❌ Backend server not running. Start FastAPI first.")
+
+            except requests.exceptions.Timeout:
+                st.error("⏳ Request timed out. Try again.")
 
             except Exception as e:
-                st.error("Backend server not running")
+                st.error(f"⚠️ Error: {str(e)}")
