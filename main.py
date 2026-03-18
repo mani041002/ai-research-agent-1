@@ -1,13 +1,13 @@
 from fastapi import FastAPI
-from agent import research
+from agent import research  # your function
 
 app = FastAPI()
 
 @app.get("/")
 def home():
-    return {"message": "AI Research Agent Running"}
+    return {"message": "API is running"}
 
 @app.get("/research")
-def do_research(topic: str):
+def get_research(topic: str):
     result = research(topic)
     return {"research": result}
