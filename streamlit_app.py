@@ -1,71 +1,63 @@
 import streamlit as st
 import requests
+from bs4 import BeautifulSoup
+import os
+from dotenv import load_dotenv
+from langchain_groq import ChatGroq
 
-# Page config
-st.set_page_config(
-    page_title="AI Research Agent",
-    page_icon="🤖",
-    layout="centered"
+load_dotenv()
+
+groq_key = os.getenv("GROQ_API_KEY")
+
+llm = ChatGroq(
+    api_key=groq_key,
+    model="llama-3.3-70b-versatile"
 )
 
-# Title
+def scrape_web(topic):
+    url = f"https://html.duckduckgo.com/html/?q={topic}"
+    headers = {"User-Agent": "Mozilla/5.0"}
+
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    results = []
+    for r in soup.select(".result__snippet"):
+        results.append(r.get_text())
+
+    return results[:5]
+
+def research(topic):
+    web_data = scrape_web(topic)
+
+    if not web_data:
+        return "No web data found."
+
+    context = "\n".join(web_data)
+
+    prompt = f"""
+    Use the below web data to answer the question.
+
+    Question: {topic}
+
+    Web Data:
+    {context}
+
+    Answer clearly with real info:
+    """
+
+    response = llm.invoke(prompt)
+    return response.content
+
+
 st.title("🤖 AI Research Agent")
-st.markdown("Research any topic using AI + RAG")
 
-# Sidebar
-st.sidebar.header("About")
-st.sidebar.write("""
-This AI agent researches any topic using:
-- FastAPI backend
-- RAG (FAISS + embeddings)
-- Tavily web search
-- Groq LLM
-""")
+topic = st.text_input("Enter topic")
 
-st.sidebar.info("Enter a topic and click Research")
-
-# Input
-topic = st.text_input("🔍 Enter a topic to research")
-
-# Button
-if st.button("🚀 Research"):
-
-    if topic.strip() == "":
-        st.warning("Please enter a topic")
-
+if st.button("Research"):
+    if topic:
+        with st.spinner("Searching..."):
+            result = research(topic)
+            st.write(result)
     else:
-        with st.spinner("Researching... please wait..."):
-
-            try:
-                # 🔥 LOCAL BACKEND URL
-                url = "http://127.0.0.1:8000/research"
-
-                response = requests.get(
-                    url,
-                    params={"topic": topic},
-                    timeout=60
-                )
-
-                # 🔍 DEBUG INFO
-
-                st.write("Raw Response:", response.text)
-
-                if response.status_code == 200:
-                    data = response.json()
-
-                    st.success("Research Complete")
-
-                    st.subheader("📚 AI Research Result")
-                    st.write(data.get("research", "No data found"))
-
-                else:
-                    st.error("❌ Server returned an error")
-
-            except requests.exceptions.ConnectionError:
-                st.error("❌ Backend server not running. Start FastAPI first.")
-
-            except requests.exceptions.Timeout:
-                st.error("⏳ Request timed out. Try again.")
-
-            except Exception as e:
-                st.error(f"⚠️ Error: {str(e)}")
+        st.warning("Enter a topic")
