@@ -1,13 +1,10 @@
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
-import os
-from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 
-load_dotenv()
-
-groq_key = os.getenv("GROQ_API_KEY")
+# Load API key from secrets
+groq_key = st.secrets["GROQ_API_KEY"]
 
 llm = ChatGroq(
     api_key=groq_key,
@@ -36,20 +33,19 @@ def research(topic):
     context = "\n".join(web_data)
 
     prompt = f"""
-    Use the below web data to answer the question.
+    Use this web data to answer:
 
-    Question: {topic}
+    {topic}
 
-    Web Data:
+    Data:
     {context}
-
-    Answer clearly with real info:
     """
 
     response = llm.invoke(prompt)
     return response.content
 
 
+# UI
 st.title("🤖 AI Research Agent")
 
 topic = st.text_input("Enter topic")
