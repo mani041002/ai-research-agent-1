@@ -12,17 +12,24 @@ llm = ChatGroq(
 )
 
 def scrape_web(topic):
-    url = f"https://html.duckduckgo.com/html/?q={topic}"
+    import requests
+    from bs4 import BeautifulSoup
+
+    url = f"https://www.google.com/search?q={topic}"
     headers = {"User-Agent": "Mozilla/5.0"}
 
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, "html.parser")
 
     results = []
-    for r in soup.select(".result__snippet"):
-        results.append(r.get_text())
 
-    return results[:5]
+    # Get featured snippets / main answers
+    for g in soup.select("div.BNeawe"):
+        text = g.get_text()
+        if text and len(text) > 20:
+            results.append(text)
+
+    return results[:8]
 
 def research(topic):
     web_data = scrape_web(topic)
@@ -33,14 +40,16 @@ def research(topic):
     context = "\n".join(web_data)
 
     prompt = f"""
-    Use this web data to answer:
+    Answer the question ONLY using the data below.
 
-    {topic}
+    If price or factual data exists, give exact answer.
+    Do NOT say "I don't know" if data is present.
 
-    Data:
+    Question: {topic}
+
+    Web Data:
     {context}
     """
-
     response = llm.invoke(prompt)
     return response.content
 
